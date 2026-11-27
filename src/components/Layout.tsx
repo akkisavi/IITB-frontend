@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType, type SVGProps } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useIsFetching } from '@tanstack/react-query';
 import { canAudit, useAuth } from '../auth/AuthContext';
 import type { Role } from '../api/types';
@@ -40,6 +40,7 @@ export function Layout() {
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const loc = useLocation();
+  const navigate = useNavigate();
 
   function toggleCollapsed() {
     setCollapsed((c) => {
@@ -120,7 +121,7 @@ export function Layout() {
             </span>
             {ROLE_LABEL[user.role]}
           </NavLink>
-          <button type="button" data-testid="logout-button" className="btn btn-ghost btn-sm gap-1.5 px-2" aria-label="Sign out" onClick={() => void logout()}>
+          <button type="button" data-testid="logout-button" className="btn btn-ghost btn-sm gap-1.5 px-2" aria-label="Sign out" onClick={() => { void logout().then(() => navigate('/login', { replace: true })); }}>
             <IconLogout className="h-4 w-4" />
             <span className="hidden sm:inline">Sign out</span>
           </button>
