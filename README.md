@@ -4,7 +4,7 @@ A small warehouse management app: a 5x5 floor (A-E x 1-5) with transfer point A1
 
 - Design and decisions: [DESIGN.md](DESIGN.md)
 - AI workflow and verification: [AI_USAGE.md](AI_USAGE.md)
-- API setup: [IITB-backend README](https://github.com/akkisavi/IITB-backend/blob/main/README.md)
+- API setup: [IITB-backend README](https://github.com/akkisavi/IITB-backend/blob/391d91398069c8e6413e149206a6dd85a33a6c9e/README.md)
 
 ## Links
 The UI and API live in two repositories, each app at its own repository root.
