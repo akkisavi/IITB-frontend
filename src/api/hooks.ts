@@ -130,7 +130,7 @@ export function useUnloadPallet() {
 export function useCreateUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { username: string; password: string; role: Role }) =>
+    mutationFn: (body: { username: string; password: string; role: Role; email?: string }) =>
       api<ManagedUser>('/api/users/', { method: 'POST', body }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
   });
@@ -139,7 +139,7 @@ export function useCreateUser() {
 export function useUpdateUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...body }: { id: number; role?: Role; is_active?: boolean }) =>
+    mutationFn: ({ id, ...body }: { id: number; role?: Role; is_active?: boolean; email?: string }) =>
       api<ManagedUser>(`/api/users/${id}/`, { method: 'PATCH', body }),
     onSettled: () => qc.invalidateQueries({ queryKey: ['users'] }),
   });

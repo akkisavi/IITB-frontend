@@ -23,17 +23,22 @@ function errText(err: unknown) {
   return 'Unexpected error.';
 }
 
+const MSG_EMAIL = 'Enter a valid email address, or leave it blank.';
+const validEmail = (v: string) => !v.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
 function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const toast = useToast();
   const create = useCreateUser();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('technician');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function reset() {
     setUsername('');
     setPassword('');
+    setEmail('');
     setRole('technician');
     setErrors({});
   }
@@ -43,10 +48,11 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
     const errs: Record<string, string> = {};
     if (!validUsername(username)) errs.username = MSG.username;
     if (!validPassword(password)) errs.password = MSG.password;
+    if (!validEmail(email)) errs.email = MSG_EMAIL;
     setErrors(errs);
     if (Object.keys(errs).length) return;
     try {
-      const u = await create.mutateAsync({ username: username.trim(), password, role });
+      const u = await create.mutateAsync({ username: username.trim(), password, role, email: email.trim() });
       toast(`Created ${u.username} as ${ROLE_LABEL[u.role]}.`, 'success');
       reset();
       onClose();
@@ -80,6 +86,20 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
           {errors.username && <span id="cu-username" data-testid="field-error-username" className="mt-1 text-xs text-occupied">{errors.username}</span>}
         </label>
         <label className="form-control">
+          <span className="label-text mb-1 font-medium">Email <span className="font-normal text-base-content/60">(optional, for password resets)</span></span>
+          <input
+            data-testid="create-user-email"
+            type="email"
+            autoComplete="off"
+            className={`input input-bordered input-sm h-10 ${errors.email ? 'input-error' : ''}`}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'cu-email' : undefined}
+          />
+          {errors.email && <span id="cu-email" data-testid="field-error-email" className="mt-1 text-xs text-occupied">{errors.email}</span>}
+        </label>
+        <label className="form-control">
           <span className="label-text mb-1 font-medium">Initial password</span>
           <input
             data-testid="create-user-password"
@@ -108,6 +128,64 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
         </button>
       </div>
     </form>
+    </Modal>
+  );
+}
+
+function EmailDialog({ target, onClose }: { target: ManagedUser | null; onClose: () => void }) {
+  const toast = useToast();
+  const update = useUpdateUser();
+  const [value, setValue] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const current = value ?? target?.email ?? '';
+
+  function close() {
+    setValue(null);
+    setErr(null);
+    onClose();
+  }
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!target) return;
+    if (!validEmail(current)) {
+      setErr(MSG_EMAIL);
+      return;
+    }
+    try {
+      const u = await update.mutateAsync({ id: target.id, email: current.trim() });
+      toast(u.email ? `Reset emails for ${u.username} go to ${u.email}.` : `Removed the email for ${u.username}.`, 'success');
+      close();
+    } catch (e2) {
+      setErr(e2 instanceof ApiError && e2.errors.email?.length ? e2.errors.email.join(' ') : errText(e2));
+    }
+  }
+
+  return (
+    <Modal open={!!target} onClose={close} title={target ? `Email for ${target.username}` : 'Email'} testid="email-dialog" busy={update.isPending} size="sm">
+      <form onSubmit={submit} noValidate>
+        <label className="form-control">
+          <span className="label-text mb-1 font-medium">Email</span>
+          <input
+            data-testid="email-input"
+            type="email"
+            autoComplete="off"
+            className={`input input-bordered input-sm h-10 ${err ? 'input-error' : ''}`}
+            value={current}
+            onChange={(e) => setValue(e.target.value)}
+            aria-invalid={!!err}
+            aria-describedby={err ? 'em-err' : 'em-hint'}
+          />
+          {err && <span id="em-err" data-testid="field-error-email" className="mt-1 text-xs text-occupied">{err}</span>}
+        </label>
+        <p id="em-hint" className="mt-2 text-xs text-base-content/70">Forgot-password links are sent here. Leave blank to remove it.</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" className="btn btn-ghost btn-sm" onClick={close} disabled={update.isPending}>Cancel</button>
+          <button type="submit" data-testid="email-submit" className="btn btn-primary btn-sm" disabled={update.isPending}>
+            {update.isPending ? 'Saving…' : 'Save email'}
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 }
@@ -182,6 +260,7 @@ export default function UsersPage() {
   const { data, error, isLoading, refetch } = useUsers({ search, page, page_size: pageSize });
   const update = useUpdateUser();
   const [pwTarget, setPwTarget] = useState<ManagedUser | null>(null);
+  const [emailTarget, setEmailTarget] = useState<ManagedUser | null>(null);
 
   async function patch(u: ManagedUser, body: { role?: Role; is_active?: boolean }, okMsg: string) {
     try {
@@ -212,7 +291,7 @@ export default function UsersPage() {
             </h2>
             <label className="w-full sm:w-60">
               <span className="sr-only">Search users</span>
-              <input type="search" className="input input-bordered input-sm h-9 w-full" placeholder="Search username" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+              <input type="search" className="input input-bordered input-sm h-9 w-full" placeholder="Search username or email" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
             </label>
           </div>
           {isLoading && !data ? (
@@ -243,6 +322,9 @@ export default function UsersPage() {
                           {u.username}
                           {self && <span className="ml-1.5 text-xs text-base-content/60">(you)</span>}
                           {u.is_superuser && <span className="ml-1.5 rounded-sm bg-base-200 px-1 text-[11px] uppercase">superuser</span>}
+                          <span data-testid={`user-email-${u.username}`} className="block text-xs font-normal text-base-content/60">
+                            {u.email || 'No email: cannot reset password'}
+                          </span>
                             </span>
                           </span>
                         </td>
@@ -277,6 +359,9 @@ export default function UsersPage() {
                         <td className="num muted hidden whitespace-nowrap md:table-cell">{formatDateTime(u.last_login)}</td>
                         <td>
                           <span className="flex justify-end gap-1">
+                            <button type="button" data-testid={`user-edit-email-${u.username}`} className="btn btn-ghost btn-sm h-8 min-h-8" onClick={() => setEmailTarget(u)}>
+                              Email
+                            </button>
                             <button type="button" data-testid={`user-set-password-${u.username}`} className="btn btn-ghost btn-sm h-8 min-h-8" onClick={() => setPwTarget(u)}>
                               Password
                             </button>
@@ -325,6 +410,7 @@ export default function UsersPage() {
       </section>
       <CreateUserDialog open={createOpen} onClose={() => setCreateOpen(false)} />
       <SetPasswordDialog target={pwTarget} onClose={() => setPwTarget(null)} />
+      <EmailDialog key={emailTarget?.id ?? 0} target={emailTarget} onClose={() => setEmailTarget(null)} />
     </div>
   );
 }

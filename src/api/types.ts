@@ -63,6 +63,7 @@ export interface Dashboard {
 export interface ManagedUser {
   id: number;
   username: string;
+  email: string;
   role: Role;
   is_active: boolean;
   is_superuser: boolean;

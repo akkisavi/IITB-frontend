@@ -169,8 +169,8 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap text-sm">
               <input
                 type="checkbox"
                 data-testid="login-remember"
@@ -178,12 +178,12 @@ export default function LoginPage() {
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
               />
-              Remember me for 7 days
+              Remember me (7 days)
             </label>
             <Link
               to="/forgot-password"
               data-testid="login-forgot"
-              className="rounded-md text-sm text-primary underline-offset-2 hover:underline"
+              className="whitespace-nowrap rounded-md text-sm text-primary underline-offset-2 hover:underline"
             >
               Forgot password?
             </Link>
