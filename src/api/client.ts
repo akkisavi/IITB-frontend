@@ -101,7 +101,7 @@ export interface RequestOptions {
 }
 
 export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T> {
-  const url = new URL(API_BASE_URL + path);
+  const url = new URL(API_BASE_URL + path, window.location.origin);
   for (const [k, v] of Object.entries(opts.params ?? {})) {
     if (v !== undefined && v !== '') url.searchParams.set(k, String(v));
   }
