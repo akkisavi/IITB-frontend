@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body { @apply bg-base-200 text-base-content font-sans antialiased; font-size: 14px; }
+  h1, h2, h3 { @apply font-display; letter-spacing: -0.01em; }
+  :focus-visible { outline: 2px solid oklch(var(--p)); outline-offset: 2px; }
+  .num { font-variant-numeric: tabular-nums; }
+}
+
+@layer components {
+  /* Transfer point: neutral diagonal hatching, deliberately not green or red */
+  .hatch {
+    background-color: oklch(var(--b2));
+    background-image: repeating-linear-gradient(135deg, oklch(var(--bc) / 0.09) 0 6px, transparent 6px 12px);
+  }
+  .cell-free { background-color: color-mix(in oklab, oklch(var(--su)) 10%, oklch(var(--b1))); border-color: oklch(var(--su)); }
+  .cell-occupied { background-color: color-mix(in oklab, oklch(var(--er)) 12%, oklch(var(--b1))); border-color: oklch(var(--er)); }
+  .text-free { color: color-mix(in oklab, oklch(var(--su)) 80%, oklch(var(--bc))); }
+  .text-occupied { color: color-mix(in oklab, oklch(var(--er)) 85%, oklch(var(--bc))); }
+
+  /* Data tables: comfortable 44px rows, quiet uppercase headers, divider rows (no zebra), tabular numbers. */
+  .data-table { @apply w-full border-collapse text-sm; }
+  .data-table thead th {
+    @apply sticky top-0 z-10 whitespace-nowrap border-b border-base-300 bg-base-200/70 px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-base-content/70;
+  }
+  .data-table tbody td { @apply border-b border-base-300/70 px-4 py-3 align-middle; }
+  .data-table tbody tr:last-child td { @apply border-b-0; }
+  .data-table tbody tr { @apply transition-colors duration-150; }
+  .data-table tbody tr:hover { @apply bg-base-200/50; }
+  .data-table .num-col { @apply text-right tabular-nums; }
+  /* Codes, IDs and numbers never break mid-token ("PLT-" / "202"); the region scrolls instead. */
+  .data-table td.num, .data-table .num-col { @apply whitespace-nowrap; }
+  .data-table .muted { @apply text-base-content/70; }
+  .data-table-compact tbody td { @apply py-2; }
+  .data-table-compact thead th { @apply py-2; }
+}
+
+.fade-in { animation: fade-in 200ms ease-out both; }
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

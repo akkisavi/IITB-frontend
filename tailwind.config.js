@@ -1,0 +1,82 @@
+import daisyui from 'daisyui';
+
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      fontFamily: {
+        display: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+    },
+  },
+  plugins: [daisyui],
+  daisyui: {
+    logs: false,
+    themes: [
+      {
+        depot: {
+          // Warm industrial greys (stone) + clay accent for logistics; green/red reserved for slot state.
+          primary: '#B45309',
+          'primary-content': '#FFFFFF',
+          secondary: '#44403C',
+          'secondary-content': '#FFFFFF',
+          accent: '#B45309',
+          'accent-content': '#FFFFFF',
+          neutral: '#292524',
+          'neutral-content': '#F5F5F4',
+          'base-100': '#FFFFFF',
+          'base-200': '#F5F5F4',
+          'base-300': '#E7E5E4',
+          'base-content': '#1C1917',
+          info: '#1D4ED8',
+          'info-content': '#FFFFFF',
+          success: '#15803D',
+          'success-content': '#FFFFFF',
+          warning: '#A16207',
+          'warning-content': '#FFFFFF',
+          error: '#B91C1C',
+          'error-content': '#FFFFFF',
+          '--rounded-box': '0.5rem',
+          '--rounded-btn': '0.375rem',
+          '--rounded-badge': '0.125rem',
+          '--animation-btn': '0',
+          '--animation-input': '0',
+          '--btn-focus-scale': '1',
+        },
+      },
+      {
+        'depot-dark': {
+          primary: '#F59E0B',
+          'primary-content': '#1C1917',
+          secondary: '#D6D3D1',
+          'secondary-content': '#1C1917',
+          accent: '#F59E0B',
+          'accent-content': '#1C1917',
+          neutral: '#E7E5E4',
+          'neutral-content': '#1C1917',
+          'base-100': '#1C1917',
+          'base-200': '#141110',
+          'base-300': '#3A3532',
+          'base-content': '#F5F5F4',
+          info: '#60A5FA',
+          'info-content': '#0C0A09',
+          success: '#4ADE80',
+          'success-content': '#0C0A09',
+          warning: '#FACC15',
+          'warning-content': '#0C0A09',
+          error: '#F87171',
+          'error-content': '#0C0A09',
+          '--rounded-box': '0.5rem',
+          '--rounded-btn': '0.375rem',
+          '--rounded-badge': '0.125rem',
+          '--animation-btn': '0',
+          '--animation-input': '0',
+          '--btn-focus-scale': '1',
+        },
+      },
+    ],
+    darkTheme: 'depot-dark',
+  },
+};
