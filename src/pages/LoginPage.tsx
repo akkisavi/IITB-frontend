@@ -178,7 +178,7 @@ export default function LoginPage() {
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
               />
-              Remember me (7 days)
+              Remember me
             </label>
             <Link
               to="/forgot-password"
