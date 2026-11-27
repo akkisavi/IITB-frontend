@@ -115,6 +115,6 @@ The UI mirrors these rules with the same messages; the server remains authoritat
 
 ## 13. Limitations
 - Free-tier cold starts (~1 min on Render).
-- Hosted data is not durable: Render's free filesystem resets the SQLite file to the seeded demo on each deploy, restart or wake.
+- Hosted data lives in Render's free PostgreSQL, which expires after 30 days; the demo seed re-runs on each deploy.
 - Playwright tests share the evaluation DB; crashed runs may leave `E2E-*` pallets.
 
