@@ -14,7 +14,7 @@ Django + DRF  (/api/..., /health/)
    |
 SQLite (SQLITE_PATH)
 ```
-**Repository layout:** one repository with `warehouse-api/` and `warehouse-ui/` as independent apps (each has its own dependencies, README and `evaluation.json`). The brief asks for two public repositories with each app at its root; this is a deliberate departure, so evaluation tooling must be pointed at the subfolders.
+**Repository layout:** two repositories, each app at its own root: [IITB-frontend](https://github.com/akkisavi/IITB-frontend) (this UI) and [IITB-backend](https://github.com/akkisavi/IITB-backend) (the API). Each has its own dependencies, README and `evaluation.json`.
 
 **Database decision:** the API uses SQLite at `SQLITE_PATH`, locally and hosted, following the brief's §7 convention. No database server is needed.
 Hosted: UI static build on Vercel, API on Render free web service (gunicorn) with its SQLite file on the instance. Render's free filesystem is ephemeral, so the hosted data resets to the seeded demo on every deploy, restart or wake from sleep.
@@ -116,6 +116,5 @@ The UI mirrors these rules with the same messages; the server remains authoritat
 ## 13. Limitations
 - Free-tier cold starts (~1 min on Render).
 - Hosted data is not durable: Render's free filesystem resets the SQLite file to the seeded demo on each deploy, restart or wake.
-- Single repository: does not follow the brief's two-repository convention; each app is in a subfolder, not at a repository root.
 - Playwright tests share the evaluation DB; crashed runs may leave `E2E-*` pallets.
 

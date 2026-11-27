@@ -4,16 +4,17 @@ A small warehouse management app: a 5x5 floor (A-E x 1-5) with transfer point A1
 
 - Design and decisions: [DESIGN.md](DESIGN.md)
 - AI workflow and verification: [AI_USAGE.md](AI_USAGE.md)
-- API setup: [warehouse-api/README.md](../warehouse-api/README.md)
+- API setup: [IITB-backend README](https://github.com/akkisavi/IITB-backend/blob/main/README.md)
 
 ## Links
-Both apps live in **one repository**: the UI in `warehouse-ui/`, the API in `warehouse-api/`. This departs from the brief's two-repository convention (each app at its own repository root); see [DESIGN.md](DESIGN.md) §2.
+The UI and API live in two repositories, each app at its own repository root.
 
 | | URL |
 |---|---|
-| Repository | TBD (to be filled after GitHub push) |
-| Hosted UI / login | TBD (Vercel, `https://<project>.vercel.app/login`) |
-| Hosted API | TBD (Render, `https://<service>.onrender.com/health/`) |
+| UI repository | https://github.com/akkisavi/IITB-frontend |
+| API repository | https://github.com/akkisavi/IITB-backend |
+| Hosted UI / login | https://iitb-frontend-mu.vercel.app/login |
+| Hosted API | https://iitb-zeip.onrender.com (health: `/health/`) |
 
 ### Demo accounts
 | Role | Hosted username | Local setup reads |
@@ -26,12 +27,12 @@ Hosted passwords are supplied separately and are not in this repository. Locally
 
 ## Stack and runtimes
 - UI: Node.js **20+** (developed on 24), React 18, TypeScript strict, Vite 5, Tailwind + DaisyUI 4, React Router 6, TanStack Query 5, Playwright (Chromium).
-- API: Python **3.12**, Django 5.1, DRF token auth, SQLite (`SQLITE_PATH`, default `./db.sqlite3`).
+- API: Python **3.12**, Django 5.1, DRF token auth, SQLite locally (`SQLITE_PATH`, default `./db.sqlite3`), PostgreSQL on Render (`DATABASE_URL`).
 
 ## Run locally
-1. API (full steps in the API README):
+1. API (clone [IITB-backend](https://github.com/akkisavi/IITB-backend); full steps in its README):
    ```bash
-   cd warehouse-api
+   cd IITB-backend
    pip install -r requirements.txt
    export EVAL_ADMIN_PASSWORD=... EVAL_AUDITOR_PASSWORD=... EVAL_TECHNICIAN_PASSWORD=...
    python manage.py migrate --noinput
@@ -40,7 +41,7 @@ Hosted passwords are supplied separately and are not in this repository. Locally
    ```
 2. UI:
    ```bash
-   cd warehouse-ui
+   cd IITB-frontend
    npm install
    npm start        # Vite on http://127.0.0.1:5173, honours HOST / PORT
    ```
@@ -78,7 +79,7 @@ Two operators can target the same slot at once. Each load/unload runs in one dat
 
 ## Deploying the UI (Vercel Hobby, no card)
 1. Sign in to vercel.com with GitHub and import this repo. `vercel.json` sets build `npm run build`, output `dist`, and an SPA rewrite to `index.html`.
-2. Set `VITE_API_BASE_URL=https://<service>.onrender.com` and deploy.
+2. Set `VITE_API_BASE_URL=https://iitb-zeip.onrender.com` and deploy.
 3. Put the Vercel URL in the API's `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS`, then redeploy the API.
 
 Alternative: Netlify or Cloudflare Pages with the same build; `public/_redirects` gives the SPA fallback.
@@ -86,7 +87,7 @@ Alternative: Netlify or Cloudflare Pages with the same build; `public/_redirects
 ## Known limitations
 - Hosted API sleeps after 15 min idle; the first request can take about a minute (login shows a spinner).
 - History days with no operations and no seed row appear as gaps (no scheduler on the free tier).
-- "Today" is the UTC date (05:30 IST boundary).
+- "Today" and the 7-day chart use IST (Asia/Kolkata) day boundaries.
 - Auth token is stored in `localStorage`; one token per user, so logout signs out every session.
-- Shuttle status and battery are static seed values.
+- Shuttle battery is simulated (drains while idle/working, recharges at 10%); below 20% it emails a low-battery alert.
 - Playwright runs mutate the shared database; a crashed run can leave `E2E-*` pallets behind.
