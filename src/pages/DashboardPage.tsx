@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useDashboard } from '../api/hooks';
 import { OpBadge, TableRegion } from '../components/DataTable';
 import type { HistoryPoint } from '../api/types';
-import { Empty, ErrorBanner, Loading, PageHeader } from '../components/States';
+import { Empty, ErrorBanner, Loading } from '../components/States';
 import { formatDateTime, fmtNum, shortUtcDay } from '../lib/format';
 
 const SOURCE_LABEL: Record<HistoryPoint['source'], string> = {
@@ -19,9 +19,9 @@ function HistoryChart({ points, capacity }: { points: HistoryPoint[]; capacity: 
   const padB = 34;
   const padT = 10;
   const plotH = H - padB - padT;
-  const slot = (W - padL) / points.length;
+  const slot = (W - padL) / Math.max(points.length, 1);
   const bw = Math.min(44, slot * 0.58);
-  const y = (v: number) => padT + plotH - (v / capacity) * plotH;
+  const y = (v: number) => padT + plotH - (v / Math.max(capacity, 1)) * plotH;
   const ticks = [0, 6, 12, 18, 24].filter((t) => t <= capacity);
 
   return (
@@ -29,7 +29,7 @@ function HistoryChart({ points, capacity }: { points: HistoryPoint[]; capacity: 
       data-testid="history-chart"
       data-points={points.length}
       viewBox={`0 0 ${W} ${H}`}
-      className="h-auto w-full"
+      className="dashboard-chart h-auto w-full"
       role="img"
       aria-label={`Stacked bars of occupied and free storage slots for the last ${points.length} days. Data in the table below.`}
     >
@@ -44,7 +44,7 @@ function HistoryChart({ points, capacity }: { points: HistoryPoint[]; capacity: 
         const x = cx - bw / 2;
         const today = i === points.length - 1;
         return (
-          <g key={p.date}>
+          <g key={p.date} className="dashboard-chart-column" style={{ animationDelay: `${i * 55}ms` }}>
             {p.occupied === null || p.free === null ? (
               <>
                 <rect x={x} y={y(capacity)} width={bw} height={plotH} fill="none" stroke="currentColor" strokeOpacity={0.3} strokeDasharray="3 3" />
@@ -52,8 +52,8 @@ function HistoryChart({ points, capacity }: { points: HistoryPoint[]; capacity: 
               </>
             ) : (
               <>
-                <rect x={x} y={y(p.occupied)} width={bw} height={y(0) - y(p.occupied)} className="fill-error" />
-                <rect x={x} y={y(capacity)} width={bw} height={y(p.occupied) - y(capacity)} className="fill-success" fillOpacity={0.55} />
+                <rect x={x} y={y(p.occupied)} width={bw} height={y(0) - y(p.occupied)} rx="3" className="fill-error" />
+                <rect x={x} y={y(capacity)} width={bw} height={y(p.occupied) - y(capacity)} rx="3" className="fill-success" fillOpacity={0.55} />
                 {p.occupied > 0 && (
                   <text x={cx} y={y(p.occupied) + 12} textAnchor="middle" fontSize="10" fontWeight={600} className="fill-error-content num">{p.occupied}</text>
                 )}
@@ -70,14 +70,14 @@ function HistoryChart({ points, capacity }: { points: HistoryPoint[]; capacity: 
   );
 }
 
-function Stat({ label, testid, value, tone, big }: { label: string; testid: string; value: number | string; tone?: string; big?: boolean }) {
+function Stat({ label, testid, value, tone, detail }: { label: string; testid: string; value: number | string; tone?: string; detail: string }) {
   return (
-    <div className={`rounded-lg border border-base-300 bg-base-100 px-4 py-3 ${big ? 'col-span-2 sm:row-span-2 sm:py-5' : ''}`}>
-      <p className="text-sm font-medium text-base-content/70">{label}</p>
-      <p className={`num mt-1 font-display font-semibold ${big ? 'text-5xl' : 'text-2xl'} ${tone ?? ''}`}>
+    <div className="dashboard-panel dashboard-enter rounded-xl border border-base-300 bg-base-100 p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/60">{label}</p>
+      <p className={`num mt-4 font-display text-4xl font-semibold leading-none ${tone ?? ''}`}>
         <span data-testid={testid}>{value}</span>
-        {testid === 'stat-occupancy-pct' && <span className="text-2xl">%</span>}
       </p>
+      <p className="mt-3 text-xs text-base-content/60">{detail}</p>
     </div>
   );
 }
@@ -86,40 +86,68 @@ export default function DashboardPage() {
   const { data, error, isLoading, refetch } = useDashboard();
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <PageHeader
-        title="Occupancy dashboard"
-        sub={data ? <>Refreshes every 5 s · generated {formatDateTime(data.generated_at)}</> : 'Refreshes every 5 s'}
-      />
+    <div className="mx-auto max-w-7xl pb-8">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">Warehouse overview</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">Occupancy dashboard</h1>
+          <p className="mt-1 text-sm text-base-content/60">A live view of space, stock and recent movement.</p>
+        </div>
+        <div className="flex items-center gap-2 rounded-full border border-base-300 bg-base-100 px-3 py-2 text-xs text-base-content/70">
+          <span className="h-2 w-2 rounded-full bg-success" aria-hidden="true" />
+          {data ? `Updated ${formatDateTime(data.generated_at)}` : 'Refreshes every 5 s'}
+        </div>
+      </header>
       <ErrorBanner error={error} onRetry={() => void refetch()} />
       {isLoading && !data ? (
         <Loading label="Loading dashboard" />
       ) : data ? (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat big label="Occupancy" testid="stat-occupancy-pct" value={data.occupancy_pct} />
-            <Stat label="Occupied slots" testid="stat-occupied" value={data.occupied} tone="text-occupied" />
-            <Stat label="Free slots" testid="stat-free" value={data.free} tone="text-free" />
-            <Stat label="Storage capacity" testid="stat-capacity" value={data.capacity} />
-            <div className="rounded-lg border border-base-300 bg-base-100 px-4 py-3">
-              <p className="text-sm font-medium text-base-content/70">Today</p>
-              <p className="num mt-1 text-sm">
-                <span className="font-display text-2xl font-semibold">{data.loads_today}</span> loads ·{' '}
-                <span className="font-display text-2xl font-semibold">{data.unloads_today}</span> unloads
-              </p>
+        <div className="space-y-5">
+          <section className="dashboard-hero dashboard-enter relative overflow-hidden rounded-2xl bg-neutral p-6 text-neutral-content sm:p-8">
+            <div className="relative z-10 grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(260px,0.75fr)] md:items-end">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-content/60">Current storage use</p>
+                <p className="num mt-4 font-display text-7xl font-semibold leading-none tracking-tight sm:text-8xl">
+                  <span data-testid="stat-occupancy-pct">{data.occupancy_pct}</span><span className="ml-1 text-4xl text-neutral-content/60 sm:text-5xl">%</span>
+                </p>
+                <p className="mt-4 max-w-md text-sm leading-relaxed text-neutral-content/70">
+                  {data.occupied} of {data.capacity} storage slots are occupied. {data.free} available for the next load.
+                </p>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs font-medium text-neutral-content/70">
+                  <span>Occupied <strong className="num ml-1 text-neutral-content">{data.occupied}</strong></span>
+                  <span>Available <strong className="num ml-1 text-neutral-content">{data.free}</strong></span>
+                </div>
+                <div className="mt-3 h-3 overflow-hidden rounded-full bg-neutral-content/20" role="img" aria-label={`${data.occupied} of ${data.capacity} storage slots occupied`}>
+                  <div className="dashboard-meter h-full rounded-full bg-warning" style={{ width: `${Math.min(100, Math.max(0, data.occupancy_pct))}%` }} />
+                </div>
+                <p className="mt-3 text-xs text-neutral-content/50">Transfer point A1 is excluded from capacity</p>
+              </div>
+            </div>
+          </section>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Stat label="Occupied slots" testid="stat-occupied" value={data.occupied} tone="text-occupied" detail="Currently holding a pallet" />
+            <Stat label="Free slots" testid="stat-free" value={data.free} tone="text-free" detail="Ready for incoming stock" />
+            <Stat label="Storage capacity" testid="stat-capacity" value={data.capacity} detail="Excludes transfer point A1" />
+            <div className="dashboard-panel dashboard-enter rounded-xl border border-base-300 bg-base-100 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/60">Today's movement</p>
+              <p className="num mt-4 font-display text-4xl font-semibold leading-none">{data.loads_today}<span className="mx-2 text-xl font-normal text-base-content/30">/</span>{data.unloads_today}</p>
+              <p className="mt-3 text-xs text-base-content/60">Loads / unloads today</p>
             </div>
           </div>
 
-          <section className="rounded-lg border border-base-300 bg-base-100 p-4 sm:p-5">
+          <section className="dashboard-panel dashboard-enter rounded-xl border border-base-300 bg-base-100 p-5 sm:p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="text-base font-semibold">Last 7 days</h2>
+              <div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">Trend</p><h2 className="mt-1 font-display text-xl font-semibold">Last 7 days</h2></div>
               <ul className="flex gap-4 text-xs" aria-label="Chart legend">
                 <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-error" aria-hidden="true" />Occupied</li>
                 <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-success/60" aria-hidden="true" />Free</li>
                 <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm border border-dashed border-base-content/40" aria-hidden="true" />No record</li>
               </ul>
             </div>
-            <div className="mt-3 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+            <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
               <figure>
                 <HistoryChart points={data.history} capacity={data.capacity} />
                 <figcaption data-testid="history-definition" className="mt-3 max-w-prose text-xs leading-relaxed text-base-content/70">
@@ -162,9 +190,9 @@ export default function DashboardPage() {
           </section>
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-            <section data-testid="recent-operations" className="rounded-lg border border-base-300 bg-base-100">
+            <section data-testid="recent-operations" className="dashboard-panel rounded-xl border border-base-300 bg-base-100">
               <div className="flex items-baseline justify-between gap-3 px-4 py-3">
-                <h2 className="text-base font-semibold">Recent operations</h2>
+                <h2 className="font-display text-lg font-semibold">Recent operations</h2>
                 <Link to="/pallets" className="link link-hover text-xs text-base-content/70">Full log →</Link>
               </div>
               {data.recent_operations.length === 0 ? (
@@ -201,8 +229,8 @@ export default function DashboardPage() {
             </section>
 
             <div className="space-y-6">
-              <section data-testid="top-items" className="rounded-lg border border-base-300 bg-base-100">
-                <h2 className="px-4 py-3 text-base font-semibold">Top items by quantity</h2>
+              <section data-testid="top-items" className="dashboard-panel rounded-xl border border-base-300 bg-base-100">
+                <h2 className="px-4 py-3 font-display text-lg font-semibold">Top items by quantity</h2>
                 {data.top_items.length === 0 ? (
                   <p className="px-4 pb-4 text-sm text-base-content/70">No stock on hand.</p>
                 ) : (
@@ -228,8 +256,8 @@ export default function DashboardPage() {
                   </TableRegion>
                 )}
               </section>
-              <section data-testid="oldest-pallets" className="rounded-lg border border-base-300 bg-base-100">
-                <h2 className="px-4 py-3 text-base font-semibold">Longest in storage</h2>
+              <section data-testid="oldest-pallets" className="dashboard-panel rounded-xl border border-base-300 bg-base-100">
+                <h2 className="px-4 py-3 font-display text-lg font-semibold">Longest in storage</h2>
                 {data.oldest_pallets.length === 0 ? (
                   <p className="px-4 pb-4 text-sm text-base-content/70">No active pallets.</p>
                 ) : (
