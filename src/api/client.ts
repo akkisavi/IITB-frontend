@@ -27,47 +27,56 @@ export function setUnauthorizedHandler(fn: (() => void) | null) {
   onUnauthorized = fn;
 }
 
-export function getToken(): string | null {
+function activeStore(): Storage | null {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    if (localStorage.getItem(TOKEN_KEY)) return localStorage;
+    if (sessionStorage.getItem(TOKEN_KEY)) return sessionStorage;
   } catch {
     return null;
   }
+  return null;
 }
-export function storeSession(token: string, user: AuthUser) {
+
+export function isRemembered(): boolean {
+  return activeStore() === localStorage;
+}
+
+export function getToken(): string | null {
+  return activeStore()?.getItem(TOKEN_KEY) ?? null;
+}
+export function storeSession(token: string, user: AuthUser, remember = false) {
   try {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    clearSession();
+    const store = remember ? localStorage : sessionStorage;
+    store.setItem(TOKEN_KEY, token);
+    store.setItem(USER_KEY, JSON.stringify(user));
   } catch {
     /* storage blocked */
   }
 }
 export function getStoredUsername(): string | null {
-  try {
-    const raw = localStorage.getItem(USER_KEY);
-    return raw ? (JSON.parse(raw) as AuthUser).username : null;
-  } catch {
-    return null;
-  }
+  return readCachedUser()?.username ?? null;
 }
 export function storeUser(user: AuthUser) {
   try {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    (activeStore() ?? sessionStorage).setItem(USER_KEY, JSON.stringify(user));
   } catch {
     /* storage blocked */
   }
 }
 export function clearSession() {
   try {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    for (const store of [localStorage, sessionStorage]) {
+      store.removeItem(TOKEN_KEY);
+      store.removeItem(USER_KEY);
+    }
   } catch {
     /* storage blocked */
   }
 }
 export function readCachedUser(): AuthUser | null {
   try {
-    const raw = localStorage.getItem(USER_KEY);
+    const raw = activeStore()?.getItem(USER_KEY);
     return raw ? (JSON.parse(raw) as AuthUser) : null;
   } catch {
     return null;

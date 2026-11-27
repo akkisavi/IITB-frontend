@@ -6,6 +6,7 @@ import { Layout } from './components/Layout';
 import { Forbidden, Loading, NotFound } from './components/States';
 import LoginPage from './pages/LoginPage';
 import OverviewPage from './pages/OverviewPage';
+import { ForgotPasswordPage, ResetPasswordPage } from './pages/PasswordResetPages';
 import MapPage from './pages/MapPage';
 import PalletsPage from './pages/PalletsPage';
 import ShuttlePage from './pages/ShuttlePage';
@@ -32,6 +33,8 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/overview" element={<OverviewPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         element={
           <RequireAuth>

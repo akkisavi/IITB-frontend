@@ -18,7 +18,7 @@ export default function ShuttlePage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Shuttle" sub="Read from the database every 10 s. Admins and technicians can set battery and status; dropping below 20% emails a low-battery alert." />
+      <PageHeader title="Shuttle" sub="Refreshes every 10 s. The battery drains while the shuttle works and charges when docked; dropping below 20% emails a low-battery alert." />
       <ErrorBanner error={error} onRetry={() => void refetch()} />
       {isLoading && !data ? (
         <Loading label="Loading shuttle" />
@@ -56,6 +56,18 @@ export default function ShuttlePage() {
               </div>
             </dl>
             <p className="mt-5 text-xs text-base-content/60">Record updated {formatDateTime(data.updated_at)}</p>
+            {data.simulated && (
+              <p data-testid="shuttle-simulated" className="mt-3 rounded-md border border-dashed border-base-300 bg-base-200/60 px-3 py-2 text-xs text-base-content/70">
+                <span className="font-semibold text-base-content">Simulated battery.</span>{' '}
+                {data.status === 'charging'
+                  ? 'Charging: +1% every 6 s, switches to Idle at 100%.'
+                  : data.status === 'busy'
+                    ? 'Busy: −1% every 20 s. Returns to charge at 10%.'
+                    : data.status === 'idle'
+                      ? 'Idle: −1% every 90 s. Returns to charge at 10%.'
+                      : 'Offline: battery is frozen.'}
+              </p>
+            )}
           </div>
         </article>
       ) : null}
@@ -76,6 +88,9 @@ function ShuttleControl({ shuttle }: { shuttle: Shuttle }) {
   const [battery, setBattery] = useState(String(shuttle.battery_percent));
   const [status, setStatus] = useState<Shuttle['status']>(shuttle.status);
   const [error, setError] = useState('');
+  const [testEmail, setTestEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const low = Number(battery) < 20;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -84,12 +99,28 @@ function ShuttleControl({ shuttle }: { shuttle: Shuttle }) {
       setError('Battery must be a whole number from 0 to 100.');
       return;
     }
+    const email = low ? testEmail.trim() : '';
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailError('Enter a valid email address.');
+      return;
+    }
     setError('');
+    setEmailError('');
     try {
-      const s = await update.mutateAsync({ battery_percent: n, status });
-      const alert = s.battery_percent < 20 && shuttle.battery_percent >= 20;
-      toast(alert ? `Battery set to ${s.battery_percent}%. Low-battery alert email triggered.` : `Shuttle updated: ${s.battery_percent}%, ${STATUS_TEXT[s.status]}.`, alert ? 'info' : 'success');
+      const s = await update.mutateAsync({ battery_percent: n, status, ...(email ? { test_alert_email: email } : {}) });
+      if (s.test_alert_sent_to) {
+        toast(`Test alert sent to ${s.test_alert_sent_to}. Check that inbox (and spam).`, 'info');
+      } else if (s.battery_percent < 20 && shuttle.battery_percent >= 20) {
+        toast(`Battery set to ${s.battery_percent}%. Low-battery alert email triggered.`, 'info');
+      } else {
+        toast(`Shuttle updated: ${s.battery_percent}%, ${STATUS_TEXT[s.status]}.`, 'success');
+      }
     } catch (err) {
+      if (err instanceof ApiError && err.errors.test_alert_email) {
+        setEmailError(err.errors.test_alert_email.join(' '));
+        toast(err.errors.test_alert_email.join(' '), 'error');
+        return;
+      }
       const msg = err instanceof ApiError ? Object.values(err.errors).flat().join(' ') || err.detail : 'Could not update the shuttle.';
       setError(msg);
       toast(msg, 'error');
@@ -146,8 +177,35 @@ function ShuttleControl({ shuttle }: { shuttle: Shuttle }) {
           </select>
         </label>
       </div>
-      {Number(battery) < 20 && shuttle.battery_percent >= 20 && !error && (
-        <p className="mt-3 text-xs text-occupied">Saving below 20% sends a low-battery alert email.</p>
+      {low && (
+        <div className="mt-4 rounded-md border border-dashed border-warning/60 bg-base-200/60 p-3" data-testid="shuttle-test-alert">
+          <label className="block" htmlFor="test-alert-email">
+            <span className="text-xs font-medium uppercase tracking-wider text-base-content/60">
+              Send test alert to (for testing)
+            </span>
+            <input
+              id="test-alert-email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={testEmail}
+              onChange={(e) => setTestEmail(e.target.value)}
+              data-testid="shuttle-test-email"
+              aria-invalid={!!emailError}
+              aria-describedby="test-alert-help"
+              className={`input input-bordered input-sm mt-1 block w-full sm:max-w-sm ${emailError ? 'input-error' : ''}`}
+            />
+          </label>
+          <p id="test-alert-help" className={`mt-1.5 text-xs ${emailError ? 'text-error' : 'text-base-content/60'}`}>
+            {emailError ||
+              (testEmail.trim()
+                ? 'On save, the low-battery alert goes only to this address, even if the battery was already low.'
+                : shuttle.battery_percent >= 20
+                  ? 'Leave empty to send the normal alert to the configured mailbox.'
+                  : 'Battery is already low, so no normal alert will be sent. Enter an address to test.')}
+          </p>
+        </div>
       )}
       {error && <p role="alert" className="mt-3 text-sm text-error">{error}</p>}
       <button type="submit" className="btn btn-primary btn-sm mt-4" disabled={update.isPending} data-testid="shuttle-save">

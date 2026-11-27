@@ -11,7 +11,7 @@ interface AuthState {
   user: AuthUser | null;
   booting: boolean;
   notice: string | null;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string, remember?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   clearNotice: () => void;
   hasRole: (...roles: Role[]) => boolean;
@@ -60,14 +60,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(
-    async (username: string, password: string) => {
+    async (username: string, password: string, remember = false) => {
       const res = await api<{ token: string; user: AuthUser }>('/api/auth/login/', {
         method: 'POST',
-        body: { username: username.trim(), password },
+        body: { username: username.trim(), password, remember },
         auth: false,
       });
       qc.clear();
-      storeSession(res.token, res.user);
+      storeSession(res.token, res.user, remember);
       setNotice(null);
       setUser(res.user);
     },

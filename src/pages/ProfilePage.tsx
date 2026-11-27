@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { ApiError, storeSession } from '../api/client';
+import { ApiError, isRemembered, storeSession } from '../api/client';
 import { useChangePassword, useProfile } from '../api/hooks';
 import type { Role } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
@@ -46,7 +46,7 @@ function ChangePassword() {
     if (Object.keys(errs).length) return;
     try {
       const res = await change.mutateAsync({ current_password, new_password });
-      if (user) storeSession(res.token, user);
+      if (user) storeSession(res.token, user, isRemembered());
       setValues({ current_password: '', new_password: '', confirm: '' });
       toast('Password changed. Other sessions were signed out.', 'success');
     } catch (err) {
@@ -105,11 +105,11 @@ export default function ProfilePage() {
       {isLoading && !data ? (
         <Loading label="Loading profile" />
       ) : data ? (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="min-w-0 space-y-6">
             <section
               data-testid="profile-card"
-              className="flex flex-col gap-5 rounded-lg border border-base-300 bg-base-100 p-5 sm:flex-row sm:items-center sm:p-6"
+              className="flex flex-col gap-5 rounded-lg border border-base-300 bg-base-100 p-5 sm:flex-row sm:flex-wrap sm:items-center sm:p-6"
             >
               <span
                 aria-hidden="true"
@@ -117,7 +117,7 @@ export default function ProfilePage() {
               >
                 {data.username.charAt(0).toUpperCase()}
               </span>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-[12rem] flex-1">
                 <p data-testid="profile-username" className="truncate font-display text-xl font-semibold">{data.username}</p>
                 <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
                   <span className="rounded-sm bg-base-200 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide">{ROLE_LABEL[data.role]}</span>
@@ -125,7 +125,7 @@ export default function ProfilePage() {
                 </p>
                 <p className="mt-2 text-sm text-base-content/70">{ROLE_CAN[data.role]}</p>
               </div>
-              <dl className="grid shrink-0 gap-2 text-sm sm:text-right">
+              <dl className="grid shrink-0 grid-cols-2 gap-x-6 gap-y-2 text-sm sm:basis-full md:basis-auto md:grid-cols-1 md:text-right">
                 <div>
                   <dt className="text-xs text-base-content/60">Member since</dt>
                   <dd className="num">{formatDateTime(data.date_joined)}</dd>

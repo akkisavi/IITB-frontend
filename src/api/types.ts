@@ -42,7 +42,7 @@ export interface Operation {
 
 export interface Page<T> { count: number; next: string | null; previous: string | null; results: T[] }
 
-export interface Shuttle { identifier: string; status: 'idle' | 'busy' | 'charging' | 'offline'; battery_percent: number; updated_at: string }
+export interface Shuttle { identifier: string; status: 'idle' | 'busy' | 'charging' | 'offline'; battery_percent: number; updated_at: string; simulated?: boolean; test_alert_sent_to?: string }
 
 export interface HistoryPoint { date: string; occupied: number | null; free: number | null; source: 'sample' | 'live' | 'live_now' | 'missing' }
 

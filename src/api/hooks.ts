@@ -155,7 +155,7 @@ export function useSetPassword() {
 export function useUpdateShuttle() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { battery_percent?: number; status?: Shuttle['status'] }) =>
+    mutationFn: (body: { battery_percent?: number; status?: Shuttle['status']; test_alert_email?: string }) =>
       api<Shuttle>('/api/shuttle/', { method: 'PATCH', body }),
     onSuccess: (s) => qc.setQueryData(['shuttle'], s),
   });

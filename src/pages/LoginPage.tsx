@@ -50,6 +50,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(false);
 
   if (user) {
     const from = (loc.state as { from?: string } | null)?.from;
@@ -66,7 +67,7 @@ export default function LoginPage() {
     setError(null);
     clearNotice();
     try {
-      await login(username, password);
+      await login(username, password, remember);
       nav('/', { replace: true });
     } catch (err) {
       setError(
@@ -167,6 +168,25 @@ export default function LoginPage() {
                 {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                data-testid="login-remember"
+                className="checkbox checkbox-primary checkbox-sm"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+              />
+              Remember me for 7 days
+            </label>
+            <Link
+              to="/forgot-password"
+              data-testid="login-forgot"
+              className="rounded-md text-sm text-primary underline-offset-2 hover:underline"
+            >
+              Forgot password?
+            </Link>
           </div>
           <button data-testid="login-submit" type="submit" className="btn btn-primary mt-6 w-full" disabled={pending}>
             {pending && <span className="loading loading-spinner loading-sm" aria-hidden="true" />}
