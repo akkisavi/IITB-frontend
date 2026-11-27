@@ -66,9 +66,9 @@ npm test         # playwright test: Chromium, list + full JSON reporter
 UI and API must already be running (no `webServer`). Tests create uniquely named `E2E-*` pallets and unload them afterwards.
 
 ### Test results
-Latest run on 2026-11-27 (Windows 11, Node 24.6, Python 3.12.10, Chromium via Playwright) against a fresh database (before the move to SQLite; not yet re-run on SQLite) after `migrate --noinput` and `seed_demo`, API on `127.0.0.1:8010`, UI on `127.0.0.1:5180`:
+Latest run on 2026-11-27 (Windows 11, Node 24, Chromium via Playwright) against the hosted deploy: `UI_BASE_URL=https://iitb-frontend-mu.vercel.app`, `API_BASE_URL=https://iitb-zeip.onrender.com` (PostgreSQL on Render):
 
-**27 passed, 0 failed, 0 skipped** (≈33 s, 1 worker, exit code 0).
+**27 passed, 0 failed, 0 skipped** (≈1.9 min, 1 worker, exit code 0).
 
 Coverage: login and role-based navigation (3 roles), backend 401/403 enforcement through direct API calls, load (UI) → occupied cell + toast + counts, pallet details, form validation and A1 exclusion, duplicate pallet 409, unload → free cell and repeat-unload 409, cross-session update within 5 s (two browser contexts), dashboard stats vs map and 7 history points, shuttle page, 25-cell map with legend and transfer A1, 375×812 mobile layout, admin create/deactivate user, **simultaneous loads into one location (one 201, one 409)**, **Idempotency-Key replay**, **unloaded-pallet history**, **optimistic map update and rollback on 409**.
 
