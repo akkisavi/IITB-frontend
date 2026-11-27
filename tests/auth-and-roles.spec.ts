@@ -43,6 +43,8 @@ test.describe('authentication and role gating (UI)', () => {
     await page.getByTestId('logout-button').first().click();
     await expect(page).toHaveURL(/\/login/);
     await page.goto('/');
+    await expect(page).toHaveURL(/\/overview/);
+    await page.goto('/pallets');
     await expect(page).toHaveURL(/\/login/);
   });
 });

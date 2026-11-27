@@ -21,7 +21,22 @@ function cellLabel(l: WarehouseLocation) {
   return `${l.code} free`;
 }
 
-function Cell({ loc, selected, onSelect }: { loc: WarehouseLocation; selected: boolean; onSelect: () => void }) {
+function useFlashOnChange(value: string) {
+  const prev = useRef(value);
+  const [flash, setFlash] = useState(0);
+  useEffect(() => {
+    if (prev.current !== value) {
+      prev.current = value;
+      setFlash((n) => n + 1);
+    }
+  }, [value]);
+  return flash;
+}
+
+function Cell({
+  loc, index, selected, onSelect,
+}: { loc: WarehouseLocation; index: number; selected: boolean; onSelect: () => void }) {
+  const flash = useFlashOnChange(loc.state);
   const tone =
     loc.state === 'transfer' ? 'hatch border-base-content/30' : loc.state === 'occupied' ? 'cell-occupied' : 'cell-free';
   const word = loc.state === 'transfer' ? 'Transfer' : loc.state === 'occupied' ? 'Occupied' : 'Free';
@@ -34,10 +49,12 @@ function Cell({ loc, selected, onSelect }: { loc: WarehouseLocation; selected: b
       aria-label={cellLabel(loc)}
       aria-pressed={selected}
       onClick={onSelect}
-      className={`relative flex min-h-[56px] min-w-0 cursor-pointer flex-col justify-between overflow-hidden rounded-md border-2 p-1 text-left transition-[box-shadow,border-color] duration-150 hover:shadow-md sm:min-h-[84px] sm:p-2.5 ${tone} ${
+      style={{ ['--i' as string]: index }}
+      className={`cell-enter relative flex min-h-[56px] min-w-0 cursor-pointer flex-col justify-between overflow-hidden rounded-md border-2 p-1 text-left transition-[box-shadow,border-color] duration-150 hover:shadow-md sm:min-h-[84px] sm:p-2.5 ${tone} ${
         selected ? 'ring-2 ring-base-content ring-offset-2 ring-offset-base-100' : ''
       } ${loc.state === 'transfer' ? 'border-dashed' : ''}`}
     >
+      {flash > 0 && <span key={flash} aria-hidden="true" className="cell-flash pointer-events-none absolute inset-0 bg-base-content" />}
       <span className="flex items-center justify-between gap-1">
         <span className="num font-display text-sm font-semibold sm:text-base">{loc.code}</span>
         {loc.state === 'occupied' && <IconBox className="h-3.5 w-3.5 text-occupied sm:h-4 sm:w-4" />}
@@ -409,15 +426,31 @@ export default function MapPage() {
 
       <div className="mb-4 flex flex-wrap items-stretch gap-3 text-sm">
         <div className="flex items-baseline gap-2 rounded-md border border-base-300 bg-base-100 px-3 py-2">
-          <span data-testid="map-occupied-count" className="num font-display text-xl font-semibold text-occupied">{occupied}</span>
+          <span data-testid="map-occupied-count" className="num font-display text-xl font-semibold text-occupied"><span key={occupied} className="tick">{occupied}</span></span>
           <span className="text-base-content/70">occupied</span>
         </div>
         <div className="flex items-baseline gap-2 rounded-md border border-base-300 bg-base-100 px-3 py-2">
-          <span data-testid="map-free-count" className="num font-display text-xl font-semibold text-free">{freeCodes.length}</span>
+          <span data-testid="map-free-count" className="num font-display text-xl font-semibold text-free"><span key={freeCodes.length} className="tick">{freeCodes.length}</span></span>
           <span className="text-base-content/70">free</span>
         </div>
-        <div className="flex items-baseline gap-2 px-1 py-2 text-base-content/70">
-          of <span className="num font-medium text-base-content">{fmtNum(24)}</span> storage slots
+        <div className="flex min-w-[12rem] flex-1 flex-col justify-center gap-1.5 px-1 py-1">
+          <span className="text-base-content/70">
+            of <span className="num font-medium text-base-content">{fmtNum(24)}</span> storage slots ·{' '}
+            <span className="num font-medium text-base-content">{Math.round((occupied / 24) * 100)}%</span> full
+          </span>
+          <span
+            role="progressbar"
+            aria-label="Warehouse occupancy"
+            aria-valuemin={0}
+            aria-valuemax={24}
+            aria-valuenow={occupied}
+            className="block h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-base-300"
+          >
+            <span
+              className="block h-full w-full origin-left rounded-full bg-primary transition-transform duration-200 ease-out"
+              style={{ transform: `scaleX(${occupied / 24})` }}
+            />
+          </span>
         </div>
       </div>
 
@@ -438,12 +471,12 @@ export default function MapPage() {
               aria-label="Warehouse locations, columns A to E, rows 1 to 5"
               className="mt-1.5 grid grid-cols-[1rem_repeat(5,minmax(0,1fr))] gap-1.5 sm:grid-cols-[1.5rem_repeat(5,minmax(0,1fr))] sm:gap-2.5"
             >
-              {ROWS.map((r) => [
+              {ROWS.map((r, ri) => [
                 <span key={`r${r}`} aria-hidden="true" className="self-center text-center text-xs font-medium text-base-content/60">{r}</span>,
-                ...COLS.map((c) => {
+                ...COLS.map((c, ci) => {
                   const l = byCode.get(`${c}${r}`);
                   return l ? (
-                    <Cell key={l.code} loc={l} selected={selected === l.code} onSelect={() => select(l)} />
+                    <Cell key={l.code} loc={l} index={ri * COLS.length + ci} selected={selected === l.code} onSelect={() => select(l)} />
                   ) : (
                     <span key={`${c}${r}`} />
                   );
@@ -458,6 +491,7 @@ export default function MapPage() {
           <aside className="xl:sticky xl:top-0 xl:self-start">
             {selectedLoc ? (
               <DetailPanel
+                key={selectedLoc.code}
                 loc={selectedLoc}
                 operator={operator}
                 full={full}

@@ -74,3 +74,7 @@ export interface LoadPayload { pallet_number: string; barcode: string; item_name
 export interface OperationResult { operation: Operation; pallet: Pallet; location: WarehouseLocation }
 
 export interface MaintenanceNote { id: number; note: string; username: string; created_at: string }
+
+export interface Profile extends ManagedUser {
+  activity: { loads: number; unloads: number; recent: Operation[] };
+}

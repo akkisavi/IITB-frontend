@@ -15,7 +15,14 @@ Both apps live in **one repository**: the UI in `warehouse-ui/`, the API in `war
 | Hosted UI / login | TBD (Vercel, `https://<project>.vercel.app/login`) |
 | Hosted API | TBD (Render, `https://<service>.onrender.com/health/`) |
 
-Demo usernames: `demo_admin`, `demo_auditor`, `demo_technician`. Passwords are supplied separately and are not in this repository.
+### Demo accounts
+| Role | Hosted username | Local setup reads |
+|---|---|---|
+| Admin | `demo_admin` | `EVAL_ADMIN_USERNAME`, `EVAL_ADMIN_PASSWORD` |
+| Auditor | `demo_auditor` | `EVAL_AUDITOR_USERNAME`, `EVAL_AUDITOR_PASSWORD` |
+| Technician | `demo_technician` | `EVAL_TECHNICIAN_USERNAME`, `EVAL_TECHNICIAN_PASSWORD` |
+
+Hosted passwords are supplied separately and are not in this repository. Locally, `seed_demo` creates or updates each account from its `EVAL_*` variables, and the Playwright tests read the same variables.
 
 ## Stack and runtimes
 - UI: Node.js **20+** (developed on 24), React 18, TypeScript strict, Vite 5, Tailwind + DaisyUI 4, React Router 6, TanStack Query 5, Playwright (Chromium).

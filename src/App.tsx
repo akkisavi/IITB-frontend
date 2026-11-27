@@ -5,9 +5,11 @@ import type { Role } from './api/types';
 import { Layout } from './components/Layout';
 import { Forbidden, Loading, NotFound } from './components/States';
 import LoginPage from './pages/LoginPage';
+import OverviewPage from './pages/OverviewPage';
 import MapPage from './pages/MapPage';
 import PalletsPage from './pages/PalletsPage';
 import ShuttlePage from './pages/ShuttlePage';
+import ProfilePage from './pages/ProfilePage';
 import DashboardPage from './pages/DashboardPage';
 import UsersPage from './pages/UsersPage';
 
@@ -15,7 +17,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const { user, booting } = useAuth();
   const loc = useLocation();
   if (!user && booting) return <div className="p-6"><Loading label="Checking session" /></div>;
-  if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+  if (!user) return <Navigate to={loc.pathname === '/' ? '/overview' : '/login'} replace state={{ from: loc.pathname }} />;
   return <>{children}</>;
 }
 
@@ -29,6 +31,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/overview" element={<OverviewPage />} />
       <Route
         element={
           <RequireAuth>
@@ -39,6 +42,7 @@ export default function App() {
         <Route index element={<MapPage />} />
         <Route path="pallets" element={<PalletsPage />} />
         <Route path="shuttle" element={<ShuttlePage />} />
+        <Route path="profile" element={<ProfilePage />} />
         <Route path="dashboard" element={<RequireRole roles={['admin', 'auditor']}><DashboardPage /></RequireRole>} />
         <Route path="users" element={<RequireRole roles={['admin']}><UsersPage /></RequireRole>} />
         <Route path="*" element={<NotFound />} />

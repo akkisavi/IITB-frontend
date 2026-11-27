@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError, api, getStoredUsername } from './client';
 import type {
-  Dashboard, LoadPayload, MaintenanceNote, ManagedUser, Operation, OperationResult, Page, Pallet, Role, Shuttle, WarehouseLocation,
+  Dashboard, LoadPayload, MaintenanceNote, ManagedUser, Profile, Operation, OperationResult, Page, Pallet, Role, Shuttle, WarehouseLocation,
 } from './types';
 
 export const useLocations = () =>
@@ -169,5 +169,14 @@ export function useAddMaintenanceNote() {
   return useMutation({
     mutationFn: (note: string) => api<MaintenanceNote>('/api/shuttle/maintenance/', { method: 'POST', body: { note } }),
     onSuccess: (n) => qc.setQueryData<MaintenanceNote[]>(['shuttle-maintenance'], (old) => [n, ...(old ?? [])].slice(0, 50)),
+  });
+}
+
+export const useProfile = () => useQuery({ queryKey: ['profile'], queryFn: () => api<Profile>('/api/auth/profile/') });
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (body: { current_password: string; new_password: string }) =>
+      api<{ token: string }>('/api/auth/change-password/', { method: 'POST', body }),
   });
 }
