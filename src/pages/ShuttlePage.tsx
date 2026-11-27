@@ -109,7 +109,7 @@ function ShuttleControl({ shuttle }: { shuttle: Shuttle }) {
     try {
       const s = await update.mutateAsync({ battery_percent: n, status, ...(email ? { test_alert_email: email } : {}) });
       if (s.test_alert_sent_to) {
-        toast(`Test alert sent to ${s.test_alert_sent_to}. Check that inbox (and spam).`, 'info');
+        toast(`Test alert accepted for ${s.test_alert_sent_to}. Check that inbox (and spam).`, 'info');
       } else if (s.battery_percent < 20 && shuttle.battery_percent >= 20) {
         toast(`Battery set to ${s.battery_percent}%. Low-battery alert email triggered.`, 'info');
       } else {
